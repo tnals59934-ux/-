@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>불규칙 동사 테스트</title>
+<style>
+  body {
+    font-family: 'Pretendard', sans-serif, -apple-system;
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #f8fafc;
+    color: #1e293b;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 25px;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 15px;
+  }
+  button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .btn-shuffle { background: #3b82f6; color: white; }
+  .btn-shuffle:hover { background: #2563eb; }
+  .btn-check { background: #10b981; color: white; }
+  .btn-check:hover { background: #059669; }
+  .btn-print { background: #64748b; color: white; }
+  .btn-print:hover { background: #475569; }
+  .score-box {
+    margin-top: 12px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #0f172a;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  th, td {
+    border: 1px solid #e2e8f0;
+    padding: 8px 10px;
+    text-align: center;
+    font-size: 14px;
+  }
+  th {
+    background: #f1f5f9;
+    color: #334155;
+    font-weight: 700;
+  }
+  .base-word {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 15px;
+  }
+  input[type="text"] {
+    width: 88%;
+    padding: 6px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: center;
+    outline: none;
+  }
+  input[type="text"]:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+  }
+  .correct {
+    background-color: #dcfce7 !important;
+    border-color: #22c55e !important;
+  }
+  .incorrect {
+    background-color: #fee2e2 !important;
+    border-color: #ef4444 !important;
+  }
+  .ans-hint {
+    display: none;
+    color: #dc2626;
+    font-size: 12px;
+    margin-top: 3px;
+    font-weight: 500;
+  }
+  @media print {
+    body { background: white; padding: 0; }
+    .controls, .score-box { display: none; }
+    table { box-shadow: none; }
+    input { border: none !important; border-bottom: 1px solid #333 !important; border-radius: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h2>불규칙 동사 테스트 (과거형 & 과거분사형)</h2>
+  <div class="controls">
+    <button class="btn-shuffle" onclick="renderTable()">문제 무작위 섞기</button>
+    <button class="btn-check" onclick="checkAnswers()">채점하기</button>
+    <button class="btn-print" onclick="window.print()">시험지 인쇄</button>
+  </div>
+  <div id="scoreBox" class="score-box"></div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 7%;">번호</th>
+      <th style="width: 25%;">의미</th>
+      <th style="width: 22%;">원형 (제시)</th>
+      <th style="width: 23%;">과거형</th>
+      <th style="width: 23%;">과거분사형</th>
+    </tr>
+  </thead>
+  <tbody id="quizTableBody"></tbody>
+</table>
+
+<script>
+const rawData = [
+  // ABA형
+  { base: "come", past: "came", pp: "come", mean: "오다" },
+  { base: "become", past: "became", pp: "become", mean: "되다" },
+  { base: "run", past: "ran", pp: "run", mean: "달리다" },
+  // AAA형
+  { base: "hit", past: "hit", pp: "hit", mean: "치다" },
+  { base: "cost", past: "cost", pp: "cost", mean: "비용이 들다" },
+  { base: "cut", past: "cut", pp: "cut", mean: "자르다" },
+  { base: "quit", past: "quit", pp: "quit", mean: "그만두다(헤가지다)" },
+  { base: "set", past: "set", pp: "set", mean: "놓다" },
+  { base: "hurt", past: "hurt", pp: "hurt", mean: "아프다" },
+  { base: "let", past: "let", pp: "let", mean: "하게 하다" },
+  { base: "put", past: "put", pp: "put", mean: "놓다" },
+  { base: "read", past: "read", pp: "read", mean: "읽다" },
+  // ABB형
+  { base: "bring", past: "brought", pp: "brought", mean: "가져오다" },
+  { base: "build", past: "built", pp: "built", mean: "짓다" },
+  { base: "buy", past: "bought", pp: "bought", mean: "사다" },
+  { base: "catch", past: "caught", pp: "caught", mean: "붙잡다" },
+  { base: "feed", past: "fed", pp: "fed", mean: "먹이를 주다" },
+  { base: "feel", past: "felt", pp: "felt", mean: "느끼다" },
+  { base: "fight", past: "fought", pp: "fought", mean: "싸우다" },
+  { base: "find", past: "found", pp: "found", mean: "발견하다" },
+  { base: "get", past: "got", pp: "got", mean: "얻다" },
+  { base: "hang", past: "hung", pp: "hung", mean: "걸다" },
+  { base: "have", past: "had", pp: "had", mean: "갖다, 먹다" },
+  { base: "hear", past: "heard", pp: "heard", mean: "듣다" },
+  { base: "hold", past: "held", pp: "held", mean: "들다, 쥐다" },
+  { base: "keep", past: "kept", pp: "kept", mean: "지키다" },
+  { base: "lead", past: "led", pp: "led", mean: "인도하다" },
+  { base: "leave", past: "left", pp: "left", mean: "떠나다" },
+  { base: "lay", past: "laid", pp: "laid", mean: "놓다, 두다" },
+  { base: "lose", past: "lost", pp: "lost", mean: "잃다, 지다" },
+  { base: "make", past: "made", pp: "made", mean: "만들다" },
+  { base: "mean", past: "meant", pp: "meant", mean: "의미하다" },
+  { base: "meet", past: "met", pp: "met", mean: "만나다" },
+  { base: "pay", past: "paid", pp: "paid", mean: "지불하다" },
+  { base: "say", past: "said", pp: "said", mean: "말하다" },
+  { base: "sell", past: "sold", pp: "sold", mean: "팔다" },
+  { base: "send", past: "sent", pp: "sent", mean: "보내다" },
+  { base: "sit", past: "sat", pp: "sat", mean: "앉다" },
+  { base: "sleep", past: "slept", pp: "slept", mean: "잠자다" },
+  { base: "spend", past: "spent", pp: "spent", mean: "(시간)보내다" },
+  { base: "stand", past: "stood", pp: "stood", mean: "일어서다" },
+  { base: "teach", past: "taught", pp: "taught", mean: "가르치다" },
+  { base: "tell", past: "told", pp: "told", mean: "말하다" },
+  { base: "think", past: "thought", pp: "thought", mean: "생각하다" },
+  { base: "win", past: "won", pp: "won", mean: "이기다" },
+  // ABC형
+  { base: "be", past: "was,were,was/were,am/is was", pp: "been", mean: "이다, 있다", displayPast: "was / were" },
+  { base: "bear", past: "bore", pp: "born", mean: "낳다" },
+  { base: "begin", past: "began", pp: "begun", mean: "시작하다" },
+  { base: "blow", past: "blew", pp: "blown", mean: "불다" },
+  { base: "break", past: "broke", pp: "broken", mean: "부수다" },
+  { base: "choose", past: "chose", pp: "chosen", mean: "선택하다" },
+  { base: "do", past: "did", pp: "done", mean: "하다" },
+  { base: "draw", past: "drew", pp: "drawn", mean: "그리다" },
+  { base: "drink", past: "drank", pp: "drunk", mean: "마시다" },
+  { base: "drive", past: "drove", pp: "driven", mean: "운전하다" },
+  { base: "eat", past: "ate", pp: "eaten", mean: "먹다" },
+  { base: "fall", past: "fell", pp: "fallen", mean: "떨어지다" },
+  { base: "fly", past: "flew", pp: "flown", mean: "날다" },
+  { base: "forget", past: "forgot", pp: "forgotten", mean: "잊다" },
+  { base: "give", past: "gave", pp: "given", mean: "주다" },
+  { base: "go", past: "went", pp: "gone", mean: "가다" },
+  { base: "grow", past: "grew", pp: "grown", mean: "자라다" },
+  { base: "hide", past: "hid", pp: "hidden", mean: "숨다" },
+  { base: "know", past: "knew", pp: "known", mean: "알다" },
+  { base: "lie", past: "lay", pp: "lain", mean: "눕다" },
+  { base: "ride", past: "rode", pp: "ridden", mean: "타다" },
+  { base: "ring", past: "rang", pp: "rung", mean: "울리다" },
+  { base: "mistake", past: "mistook", pp: "mistaken", mean: "오해하다" },
+  { base: "rise", past: "rose", pp: "risen", mean: "오르다" },
+  { base: "see", past: "saw", pp: "seen", mean: "보다" },
+  { base: "shake", past: "shook", pp: "shaken", mean: "흔들다" },
+  { base: "show", past: "showed", pp: "shown", mean: "보여주다" },
+  { base: "sing", past: "sang", pp: "sung", mean: "노래하다" },
+  { base: "speak", past: "spoke", pp: "spoken", mean: "말하다" },
+  { base: "steal", past: "stole", pp: "stolen", mean: "훔치다" },
+  { base: "swim", past: "swam", pp: "swum", mean: "수영하다" },
+  { base: "take", past: "took", pp: "taken", mean: "(버스를)타다" },
+  { base: "wear", past: "wore", pp: "worn", mean: "입다" },
+  { base: "write", past: "wrote", pp: "written", mean: "쓰다" }
+];
+
+function shuffle(array) {
+  let arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function renderTable() {
+  const currentList = shuffle(rawData);
+  const tbody = document.getElementById("quizTableBody");
+  tbody.innerHTML = "";
+  document.getElementById("scoreBox").innerText = "";
+
+  currentList.forEach((item, index) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${index + 1}</td>
+      <td>${item.mean}</td>
+      <td class="base-word">${item.base}</td>
+      <td>
+        <input type="text" data-ans="${item.past}" placeholder="과거형">
+        <div class="ans-hint">${item.displayPast || item.past}</div>
+      </td>
+      <td>
+        <input type="text" data-ans="${item.pp}" placeholder="과거분사형">
+        <div class="ans-hint">${item.pp}</div>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+function checkAnswers() {
+  const inputs = document.querySelectorAll("#quizTableBody input");
+  let correctCount = 0;
+  const totalCount = inputs.length;
+
+  inputs.forEach(input => {
+    const expected = input.getAttribute("data-ans").toLowerCase().split(",");
+    const actual = input.value.trim().toLowerCase();
+    const hint = input.nextElementSibling;
+
+    if (actual !== "" && expected.includes(actual)) {
+      input.className = "correct";
+      hint.style.display = "none";
+      correctCount++;
+    } else {
+      input.className = "incorrect";
+      hint.style.display = "block";
+    }
+  });
+
+  const percentage = Math.round((correctCount / totalCount) * 100);
+  document.getElementById("scoreBox").innerText = `점수: ${correctCount} / ${totalCount} (${percentage}점)`;
+}
+
+window.onload = renderTable;
+</script>
+</body>
+</html>
